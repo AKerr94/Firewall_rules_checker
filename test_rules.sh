@@ -65,7 +65,10 @@ do
     COMMAND="echo QUIT > quit; timeout 3s telnet ${DEST} ${PORT} < quit; echo EXIT_STATUS; rm -f quit"
     COMMAND=$(echo ${COMMAND} | sed s/EXIT_STATUS/\$\?/g)
     SSHKEY=$(ssh-keyscan ${SOURCE} 2> /dev/null)
-    echo ${SSHKEY} >> ~/.ssh/known_hosts
+    cat ~/.ssh/known_hosts | grep -q ${SOURCE}
+    if ! [ $? -eq 0 ]; then
+        echo ${SSHKEY} >> ~/.ssh/known_hosts
+    fi
     ssh -n ${SOURCE} ${COMMAND} > tmp_result
 
     # 124 = timeout command cut connection, else success
