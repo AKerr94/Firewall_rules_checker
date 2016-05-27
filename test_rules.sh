@@ -18,9 +18,10 @@ NC='\033[0m'
 CONFIG_FILE="config"
 CONFIG_FILE_OUT="${CONFIG_FILE}_out"
 RESULTS_OUT="test_results"
+TIMEOUT=3
 
 function usage {
-    echo -e "${YELLOW}Usage: [-i <config file>]${NC}"
+    echo -e "${YELLOW}Usage: [-i <config file>] [-t <timeout (seconds)>]${NC}"
 }
 
 while [[ $# > 0 ]]
@@ -30,6 +31,11 @@ case $flag in
     -i|--config)
     CONFIG_FILE="$2"
     echo -e "Read in ${YELLOW}${CONFIG_FILE}${NC} as config file location"
+    shift
+    ;;
+    -t|--timeout)
+    TIMEOUT="$2"
+    echo -e "Read in ${YELLOW}${TIMEOUT}${NC}s as timeout"
     shift
     ;;
     *)
@@ -62,7 +68,7 @@ do
     RULE="${SOURCE} -> ${DEST}:${PORT}"
 
     # Build commands to execute on remote host and save result to temp file
-    COMMAND="echo QUIT > quit; timeout 3s telnet ${DEST} ${PORT} < quit; echo EXIT_STATUS; rm -f quit"
+    COMMAND="echo QUIT > quit; timeout ${TIMEOUT}s telnet ${DEST} ${PORT} < quit; echo EXIT_STATUS; rm -f quit"
     COMMAND=$(echo ${COMMAND} | sed s/EXIT_STATUS/\$\?/g)
     SSHKEY=$(ssh-keyscan ${SOURCE} 2> /dev/null)
     cat ~/.ssh/known_hosts | grep -q ${SOURCE}
