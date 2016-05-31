@@ -50,7 +50,7 @@ done
 
 # Read in interpreted config file, ssh into source and test access to port on destination address
 echo -e "${YELLOW}Testing firewall rules now..${NC}"
-> test_results
+> ${RESULTS_OUT}
 while read -r line
 do
     RULE_ARR=()
