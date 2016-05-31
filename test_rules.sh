@@ -75,14 +75,18 @@ do
     if ! [ $? -eq 0 ]; then
         echo ${SSHKEY} >> ~/.ssh/known_hosts
     fi
-    ssh -n ${SOURCE} ${COMMAND} > tmp_result
+    ssh -qn ${SOURCE} ${COMMAND} > tmp_result
 
     # 124 = timeout command cut connection, else success
     EXIT_STATUS=$(tail -n 1 tmp_result)
     if [ "${EXIT_STATUS}" = "124" ]; then
         echo -e "${RED}${RULE} FAILED${NC}" >> ${RESULTS_OUT}
-    else
+    elif [ "${EXIT_STATUS}" = "127" ]; then
+        echo -e "${RED}Could not run test on host ${SOURCE}: Telnet/ timeout may not be available${NC}" >> ${RESULTS_OUT}
+    elif [ "${EXIT_STATUS}" = "1" ]; then
         echo -e "${GREEN}${RULE} PASSED${NC}" >> ${RESULTS_OUT}
+    else
+        echo -e "${RED}Unknown result for ${RULE}: Exit code ${EXIT_STATUS}${NC}" >> ${RESULTS_OUT}
     fi
 done < ${CONFIG_FILE_OUT}
 
