@@ -91,7 +91,7 @@ do
     # Save result based on result of commands executed
     EXIT_STATUS=$(tail -n 1 tmp_result)
     if [ "${EXIT_STATUS}" = "124" ]; then
-        echo -e "${RED}${RULE} FAILED$ - Exceeded telnet timeout${NC}" >> ${RESULTS_OUT}
+        echo -e "${RED}${RULE} FAILED - Exceeded telnet timeout${NC}" >> ${RESULTS_OUT}
     elif [ "${EXIT_STATUS}" = "127" ]; then
         echo -e "${RED}Could not run test on host ${SOURCE}: Telnet/ timeout may not be available${NC}" >> ${RESULTS_OUT}
     elif [ "${EXIT_STATUS}" = "1" ]; then
