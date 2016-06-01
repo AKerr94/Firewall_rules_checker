@@ -49,10 +49,12 @@ done
 ./rewrite_config.py -i ${CONFIG_FILE} -o ${CONFIG_FILE_OUT}
 
 # Read in interpreted config file, ssh into source and test access to port on destination address
-echo -e "${YELLOW}Testing firewall rules now..${NC}"
+echo -e "${YELLOW}Testing firewall rules now.. (this may take some time)${NC}"
 > ${RESULTS_OUT}
 while read -r line
 do
+    echo -n "."
+
     RULE_ARR=()
     while IFS=',' read -ra ADDR; do
         count=1
@@ -67,26 +69,40 @@ do
     PORT=${RULE_ARR[3]}
     RULE="${SOURCE} -> ${DEST}:${PORT}"
 
-    # Build commands to execute on remote host and save result to temp file
-    COMMAND="echo QUIT > quit; timeout ${TIMEOUT}s telnet ${DEST} ${PORT} < quit; echo EXIT_STATUS; rm -f quit"
-    COMMAND=$(echo ${COMMAND} | sed s/EXIT_STATUS/\$\?/g)
+    # Scanning for SSH key - add if not already in known hosts
     SSHKEY=$(ssh-keyscan ${SOURCE} 2> /dev/null)
     cat ~/.ssh/known_hosts | grep -q ${SOURCE}
     if ! [ $? -eq 0 ]; then
         echo ${SSHKEY} >> ~/.ssh/known_hosts
     fi
-    ssh -qn ${SOURCE} ${COMMAND} > tmp_result
 
-    # 124 = timeout command cut connection, else success
+    # Confirm destination can be resolved
+    ssh -qn ${SOURCE} "nslookup ${DEST} > /dev/null 2>&1"
+    if ! [ $? -eq 0 ]; then
+        echo -e "${RED}${RULE} FAILED - Could not resolve destination" >> ${RESULTS_OUT}
+        continue
+    fi
+
+    # Build commands to execute on remote host and save result based on exit status 
+    COMMAND="echo QUIT > quit; timeout ${TIMEOUT}s telnet ${DEST} ${PORT} < quit; echo EXIT_STATUS; rm -f quit"
+    COMMAND=$(echo ${COMMAND} | sed s/EXIT_STATUS/\$\?/g)
+    ssh -qn ${SOURCE} ${COMMAND} > tmp_result 2>&1
+
+    # Save result based on result of commands executed
     EXIT_STATUS=$(tail -n 1 tmp_result)
     if [ "${EXIT_STATUS}" = "124" ]; then
-        echo -e "${RED}${RULE} FAILED${NC}" >> ${RESULTS_OUT}
+        echo -e "${RED}${RULE} FAILED$ - Exceeded telnet timeout${NC}" >> ${RESULTS_OUT}
     elif [ "${EXIT_STATUS}" = "127" ]; then
         echo -e "${RED}Could not run test on host ${SOURCE}: Telnet/ timeout may not be available${NC}" >> ${RESULTS_OUT}
     elif [ "${EXIT_STATUS}" = "1" ]; then
-        echo -e "${GREEN}${RULE} PASSED${NC}" >> ${RESULTS_OUT}
+        cat tmp_result | grep -qi "Connected"
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}${RULE} PASSED${NC}" >> ${RESULTS_OUT}
+        else
+            echo -e "${GREEN}${RULE} PASSED - but service refused connection${NC}" >> ${RESULTS_OUT}
+        fi
     else
-        echo -e "${RED}Unknown result for ${RULE}: Exit code ${EXIT_STATUS}${NC}" >> ${RESULTS_OUT}
+        echo -e "${RED}Unknown result for ${RULE}: Exited with '${EXIT_STATUS}'${NC}" >> ${RESULTS_OUT}
     fi
 done < ${CONFIG_FILE_OUT}
 
