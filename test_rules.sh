@@ -56,9 +56,9 @@ do
     echo -n "."
 
     RULE_ARR=()
-    while IFS=',' read -ra ADDR; do
+    while IFS=',' read -ra VALUES; do
         count=1
-        for j in "${ADDR[@]}"; do
+        for j in "${VALUES[@]}"; do
             RULE_ARR[${count}]=${j}
             count=$((count+1))
         done
@@ -88,7 +88,7 @@ do
     COMMAND=$(echo ${COMMAND} | sed s/EXIT_STATUS/\$\?/g)
     ssh -qn ${SOURCE} ${COMMAND} > tmp_result 2>&1
 
-    # Save result based on result of commands executed
+    # Save rule success/ failure message based on result of commands executed
     EXIT_STATUS=$(tail -n 1 tmp_result)
     if [ "${EXIT_STATUS}" = "124" ]; then
         echo -e "${RED}${RULE} FAILED - Exceeded telnet timeout${NC}" >> ${RESULTS_OUT}
@@ -99,7 +99,7 @@ do
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}${RULE} PASSED${NC}" >> ${RESULTS_OUT}
         else
-            echo -e "${GREEN}${RULE} PASSED - but service refused connection${NC}" >> ${RESULTS_OUT}
+            echo -e "${GREEN}${RULE} PASSED ${YELLOW}- but service refused connection${NC}" >> ${RESULTS_OUT}
         fi
     else
         echo -e "${RED}Unknown result for ${RULE}: Exited with '${EXIT_STATUS}'${NC}" >> ${RESULTS_OUT}
