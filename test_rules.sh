@@ -30,6 +30,7 @@ flag="$1"
 case $flag in
     -i|--config)
     CONFIG_FILE="$2"
+    CONFIG_FILE_OUT="${CONFIG_FILE}_out"
     echo -e "Read in ${YELLOW}${CONFIG_FILE}${NC} as config file location"
     shift
     ;;
