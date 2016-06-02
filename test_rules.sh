@@ -105,8 +105,13 @@ do
         echo ${EXIT_STATUS} | grep -qi "Connection refused"
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}${RULE} PASSED ${YELLOW}- but service refused connection${NC}" >> ${RESULTS_OUT}
-        else            
-            echo -e "${RED}Unknown result for ${RULE}: Exited with '${EXIT_STATUS}'${NC}" >> ${RESULTS_OUT}
+        else
+            echo ${EXIT_STATUS} | grep -qi "Connection closed"
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}${RULE} PASSED" >> ${RESULTS_OUT}
+            else
+                echo -e "${RED}Unknown result for ${RULE}: Exited with '${EXIT_STATUS}'${NC}" >> ${RESULTS_OUT}
+            fi
         fi
     fi
 done < ${CONFIG_FILE_OUT}
